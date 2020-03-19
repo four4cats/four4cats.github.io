@@ -98,4 +98,6 @@ theme: alpha-dust
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
-  type: ''
+  type: git
+  repo: git@github.com:four4cats/four4cats.github.io.git
+  branch: master
