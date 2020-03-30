@@ -32,13 +32,16 @@ tags: iOS, Jenkins, fastlane, infer, CI/CD
 ##### Plan A
 在 Jenkins 里面每一个 Job 的配置里都有**Build after other projects are built**这个选项，我们在这里填写依赖的上游 Job 名称。
 使用方法如下
+![plana.png](http://130.211.252.198:8090/upload/2020/03/plan-a-7b60753eba744f98bc5c8d976e20ad55.png)
 
 ##### Plan B
 Jenkins Plugin: [Parameterized Trigger](https://plugins.jenkins.io/parameterized-trigger/)
 使用这个插件，我们在建立依赖关系的同时还能往下游传递参数让下游 Job 可以根据不同的条件执行不同的任务。
 使用方法如下：
 Job A
+![planb1.png](http://130.211.252.198:8090/upload/2020/03/plan-b-1-f976bd38e3b14493a16006e1c7406871.png)![planb2.png](http://130.211.252.198:8090/upload/2020/03/plan-b-2-ed97ecda7dc54f5bae187167e7f7819b.png)
 Job B
+![planb3.png](http://130.211.252.198:8090/upload/2020/03/plan-b-3-b0d4224f082340bdb52e65ac12e17a2c.png)
 
 以上两种方案，按需使用。
 这里根据需求，我选用的是 Plan B，因为 Jenkins 的每一个 Job 的 workspace 都是独立的，而我设计的整个持续集成的流程其实作用的对象是同一个，so，我希望所有的 Job 都是在同一个 workspace 里面运行，理所当然我需要把 workspace 的绝对路径作为参数传给下游 Job，来达到让所有的 Job 作用的对象都是同一个。
@@ -55,6 +58,7 @@ Job B
 使用方法如下：
 1. 配置项目地址
 2. 配置仓库地址，如果是私有仓库，需配置账号密码或者 SSH 密钥
+![Jenkinsgit1.png](http://130.211.252.198:8090/upload/2020/03/Jenkins-git-1-c902b04cf05447fda63a83dce6a90976.png)
 3. 这里我使用 Job 依赖的 Plan B 方案，传递**branch_ref**和**workspace**两个参数
 4. 触发下游 Job
 
@@ -71,7 +75,8 @@ xcodebuild -project xxx.xcodeproj -scheme xxx
 这个 Job 不会产生任何的参数，所以我们只需要将上游 Job 传递过来的参数，继续传给下游项目。
 
 #### Step 3 UT & UITest
-++目前我们项目的单元测试和 UITest还在 coding 阶段，所以这一步暂不实现。++
+*<u>目前我们项目的单元测试和 UITest还在 coding 阶段，所以这一步暂不实现。</u>*
+
 #### Step 4 Static code analysis
 > Static code analysis 目前主流的工具有两个，一个是 [OCLint](http://oclint.org) 还有一个是 [Infer](https://fbinfer.com)(Facebook 开源)。
 
@@ -86,14 +91,14 @@ infer run -- xcodebuild -workspace xxx.xcworkspace -scheme xxx -configuration De
 infer run -- xcodebuild -project xxx.xcodeproj -scheme xxx -configuration Debug -sdk iphonesimulator
 ```
 配置 PMD Plugin
-**图片， 待填**
+![JenkinsPMD.png](http://130.211.252.198:8090/upload/2020/03/Jenkins-PMD-85b8ef1ecc1c4fbb82bbc4b2e5a8e904.png)
 
 当分析结果出来后，使用 Jenkins 将当前的结果通过 Email 发送给开发同学，通知开发同学尽快修复存在隐患的代码。
 
 同样的，这里我们还是继续将上游传递过来的参数，继续传给下游项目，不做任何修改。
 #### Step 5 Archive
 > fastlane, App automation done right. The easiest way to build and release mobile apps.
-> fastlane handles tedious tasks so you don’t have to.
+fastlane handles tedious tasks so you don’t have to.
 
 我们利用强大的开源社区提供的工具**fastlane**来完成最后一步打包和分发。
 安装 fastlane
@@ -115,7 +120,7 @@ fastlane init swift
 配置 fastlane file
 **这里建议第一次接触 fastlane 的小伙伴，仔细阅读 fastlane 的[文档](https://docs.fastlane.tools)。**
 最终的执行命令
-```
+```shell
 # 上游传递的参数 branch_name
 if [ branch_name = "master"]
 then;
@@ -131,6 +136,14 @@ fi
 
 # 如果是 dev 分支，就什么都不做
 ```
+
+**特别注意**
+当你在 Jenkins 里执行 fastlane时，可能会遇到
+`While executing gem ... (Errno::EACCES)
+    Permission denied @ rb_sysopen - /Users/edz1/.rvm/rubies/ruby-2.6.3/lib/ruby/gems/2.6.0/wrappers/bin-proxy`
+这个错误，那么你需要配置下 Ruby 环境。
+![Jenkinsrubyversion.png](http://130.211.252.198:8090/upload/2020/03/Jenkins-ruby-version-0345f92c7e8044098151c658d274482f.png)
+And，这个问题就解决了，你可以继续下面的步骤了。
 
 当 Archive Job 成功后，Jenkins 会通过 Email 通知技术部门的全体小伙伴打包成功，可以开始新的一轮测试了。
 
